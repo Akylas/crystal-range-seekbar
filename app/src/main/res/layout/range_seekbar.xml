@@ -27,6 +27,12 @@
 
                 <com.crystal.crystalrangeseekbar.widgets.CrystalRangeSeekbar
                     android:id="@+id/rangeSeekbar1"
+                    app:min_value="0"
+                    app:min_start_value="0"
+                    app:gap="0.5"
+                    app:steps="0.3"
+                    app:max_value="11"
+                    app:max_start_value="8"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"/>
 
@@ -56,6 +62,13 @@
             </RelativeLayout>
 
             <!-- seekbar option 2 -->
+
+            <Button
+                android:id="@+id/button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Button" />
+
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -66,16 +79,16 @@
                     android:id="@+id/rangeSeekbar2"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:corner_radius="10"
-                    app:min_value="50"
-                    app:max_value="150"
                     app:bar_color="#C69E89"
                     app:bar_highlight_color="#A54B17"
+                    app:corner_radius="10"
+                    app:data_type="_integer"
                     app:left_thumb_color="#775E4F"
-                    app:right_thumb_color="#775E4F"
                     app:left_thumb_color_pressed="#4C2D1A"
-                    app:right_thumb_color_pressed="#4C2D1A"
-                    app:data_type="_integer"/>
+                    app:max_value="150"
+                    app:min_value="50"
+                    app:right_thumb_color="#775E4F"
+                    app:right_thumb_color_pressed="#4C2D1A" />
 
                 <TextView
                     android:id="@+id/textMin2"

@@ -3,12 +3,13 @@ package com.crystal.crystalrangeseekbar.ui.fragments;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.v4.app.Fragment;
+import androidx.fragment.app.Fragment;
 import android.util.Log;
 import android.view.InflateException;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -67,10 +68,12 @@ public class RangeSeekbar extends Fragment {
 
         // get seekbar from view
         final CrystalRangeSeekbar rangeSeekbar = (CrystalRangeSeekbar) rootView.findViewById(R.id.rangeSeekbar1);
+        final Button button = (Button) rootView.findViewById(R.id.button);
 
         // get min and max text view
         final TextView tvMin = (TextView) rootView.findViewById(R.id.textMin1);
         final TextView tvMax = (TextView) rootView.findViewById(R.id.textMax1);
+        rangeSeekbar.setDataType(CrystalRangeSeekbar.DataType.DOUBLE);
 
         // set listener
         rangeSeekbar.setOnRangeSeekbarChangeListener(new OnRangeSeekbarChangeListener() {
@@ -89,12 +92,13 @@ public class RangeSeekbar extends Fragment {
             }
         });
 
-        new Handler().postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                rangeSeekbar.setMinValue(6).setMaxValue(30).setMinStartValue(7).setMaxStartValue(10).apply();
-            }
-        }, 5000);
+        button.setOnClickListener(view -> rangeSeekbar.setMinValue(0).setMaxValue(11).setMinStartValue(4.5f).setMaxStartValue(9).apply());
+//        new Handler().postDelayed(new Runnable() {
+//            @Override
+//            public void run() {
+//                rangeSeekbar.setMinValue(0).setMaxValue(11).setMinStartValue(0).setMaxStartValue(9).apply();
+//            }
+//        }, 5000);
     }
 
     private void setRangeSeekbar2(){
