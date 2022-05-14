@@ -69,6 +69,7 @@ public class CrystalRangeSeekbar extends View {
     private float steps;
     private float gap;
     private float fixGap;
+    private float normalizedFixGap;
 
     private int mActivePointerId = INVALID_POINTER_ID;
 
@@ -108,6 +109,7 @@ public class CrystalRangeSeekbar extends View {
     private Bitmap rightThumbPressed;
     private Thumb pressedThumb;
     private double normalizedMinValue = 0d;
+    private double normalizedGap = 0d;
     private double normalizedMaxValue = 100d;
     private int pointerIndex;
     private RectF _rect;
@@ -193,13 +195,8 @@ public class CrystalRangeSeekbar extends View {
         leftThumbPressed = (leftThumbPressed == null) ? leftThumb : leftThumbPressed;
         rightThumbPressed = (rightThumbPressed == null) ? rightThumb : rightThumbPressed;
 
-        gap = Math.max(0, Math.min(gap, maxValue - minValue));
-        gap = gap / (maxValue - minValue) * 100;
-        if(fixGap != NO_FIXED_GAP){
-            fixGap = Math.min(fixGap, maxValue);
-            fixGap = fixGap / (maxValue - minValue) * 100;
-            addFixGap(true);
-        }
+        normalizedGap = Math.max(0, Math.min(gap, maxValue - minValue));
+        normalizedGap = normalizedGap / (maxValue - minValue) * 100;
 
         thumbWidth  = getThumbWidth();
         thumbHeight = getThumbHeight();
@@ -219,7 +216,14 @@ public class CrystalRangeSeekbar extends View {
 
         setMinStartValue();
         setMaxStartValue();
-
+        if(fixGap != NO_FIXED_GAP && fixGap > 0){
+            addFixGap(false);
+            addFixGap(true);
+        }
+        else{
+            addMinGap();
+            addMaxGap();
+        }
         setWillNotDraw(false);
     }
 
@@ -407,11 +411,14 @@ public class CrystalRangeSeekbar extends View {
     public void setOnRangeSeekbarFinalValueListener(OnRangeSeekbarFinalValueListener onRangeSeekbarFinalValueListener){
         this.onRangeSeekbarFinalValueListener = onRangeSeekbarFinalValueListener;
     }
+    private boolean needsSteps() {
+        return steps > 0 && steps <= ((Math.abs(maxValue)) / 2);
+    }
 
-    public Number getSelectedMinValue(){
-        double nv = normalizedMinValue;
-        if(steps > 0 && steps <= ((Math.abs(maxValue)) / 2)){
-            float stp = steps / (maxValue - minValue) * 100;
+
+    private double getStepValue(double nv) {
+        if(needsSteps()){
+            float stp = (steps / (maxValue - minValue) * 100);
             double half_step = stp / 2;
             double mod = nv % stp;
             if(mod > half_step){
@@ -426,31 +433,17 @@ public class CrystalRangeSeekbar extends View {
             if(steps != NO_STEP)
                 throw new IllegalStateException("steps out of range " + steps);
         }
+        return nv;
+    }
 
-        return formatValue(normalizedToValue(nv));
+
+
+    public Number getSelectedMinValue(){
+        return formatValue(normalizedToValue(normalizedMinValue));
     }
 
     public Number getSelectedMaxValue(){
-
-        double nv = normalizedMaxValue;
-        if(steps > 0 && steps <= (Math.abs(maxValue) / 2)){
-            float stp = steps / (maxValue - minValue) * 100;
-            double half_step = stp / 2;
-            double mod = nv % stp;
-            if(mod > half_step){
-                nv = nv - mod;
-                nv = nv + stp;
-            }
-            else{
-                nv = nv - mod;
-            }
-        }
-        else{
-            if(steps != NO_STEP)
-                throw new IllegalStateException("steps out of range " + steps);
-        }
-
-        return formatValue(normalizedToValue(nv));
+        return formatValue(normalizedToValue(normalizedMaxValue));
     }
 
     public void apply(){
@@ -459,12 +452,11 @@ public class CrystalRangeSeekbar extends View {
         normalizedMinValue = 0d;
         normalizedMaxValue = 100d;
 
-        gap = Math.max(0, Math.min(gap, maxValue - minValue));
-        gap = gap / (maxValue - minValue) * 100;
+        normalizedGap = Math.max(0, Math.min(gap, maxValue - minValue));
+        normalizedGap = normalizedGap / (maxValue - minValue) * 100;
         if(fixGap != NO_FIXED_GAP){
-            fixGap = Math.min(fixGap, maxValue);
-            fixGap = fixGap / (maxValue - minValue) * 100;
-            addFixGap(true);
+            normalizedFixGap = Math.min(normalizedFixGap, maxValue);
+            normalizedFixGap = normalizedFixGap / (maxValue - minValue) * 100;
         }
 
         thumbWidth  = getThumbWidth();
@@ -477,29 +469,29 @@ public class CrystalRangeSeekbar extends View {
         barPadding = thumbWidth * 0.5f;
 
         // set min start value
-        if(minStartValue <= minValue){
-            minStartValue = 0;
-            setNormalizedMinValue(minStartValue);
+        if(minStartValue < minValue){
+            minStartValue = minValue;
         }
         else if(minStartValue >= maxValue){
             minStartValue = maxValue;
-            setMinStartValue();
-        }
-        else{
-            setMinStartValue();
         }
 
         // set max start value
         if (maxStartValue < minStartValue || maxStartValue <= minValue) {
-            maxStartValue = 0;
-            setNormalizedMaxValue(maxStartValue);
+            maxStartValue = minValue;
         }
-        else if(maxStartValue >= maxValue){
+        else if(maxStartValue > maxValue){
             maxStartValue = maxValue;
-            setMaxStartValue();
+        }
+        setMinStartValue();
+        setMaxStartValue();
+        if(fixGap != NO_FIXED_GAP && fixGap > 0){
+            addFixGap(false);
+            addFixGap(true);
         }
         else{
-            setMaxStartValue();
+            addMinGap();
+            addMaxGap();
         }
         invalidate();
 
@@ -782,9 +774,23 @@ public class CrystalRangeSeekbar extends View {
             final float x = event.getX(pointerIndex);
 
             if (Thumb.MIN.equals(pressedThumb)) {
-                setNormalizedMinValue(screenToNormalized(x));
+                setNormalizedMinValue(getStepValue(screenToNormalized(x)));
+                if(fixGap != NO_FIXED_GAP && fixGap > 0){
+                    addFixGap(true);
+                }
+                else{
+                    addMinGap();
+                }
+                invalidate();
             } else if (Thumb.MAX.equals(pressedThumb)) {
-                setNormalizedMaxValue(screenToNormalized(x));
+                setNormalizedMaxValue(getStepValue(screenToNormalized(x)));
+                if(fixGap != NO_FIXED_GAP && fixGap > 0){
+                    addFixGap(false);
+                }
+                else{
+                    addMaxGap();
+                }
+                invalidate();
             }
         }
         catch (Exception ignored){}
@@ -818,10 +824,6 @@ public class CrystalRangeSeekbar extends View {
         return height;
     }
 
-    protected final void log(Object object){
-        Log.d("CRS=>", String.valueOf(object));
-    }
-
     //////////////////////////////////////////
     // PRIVATE METHODS
     //////////////////////////////////////////
@@ -830,17 +832,16 @@ public class CrystalRangeSeekbar extends View {
         if (minStartValue > minValue && minStartValue <= maxValue) {
             minStartValue = Math.min(minStartValue, maxValue);
             minStartValue -= minValue;
-            minStartValue = minStartValue / (maxValue - minValue) * 100;
-            setNormalizedMinValue(minStartValue);
+            minStartValue = minStartValue / (maxValue - minValue) * 100.0f;
+            setNormalizedMinValue(getStepValue(minStartValue));
         }
     }
 
     private void setMaxStartValue() {
-        if (maxStartValue <= maxValue && maxStartValue > minValue && maxStartValue >= minStartValue) {
-            maxStartValue = Math.max(maxStartValue, minValue);
+        if (maxStartValue <= maxValue && maxStartValue > minValue) {
             maxStartValue -= minValue;
-            maxStartValue = maxStartValue / (maxValue - minValue) * 100;
-            setNormalizedMaxValue(maxStartValue);
+            maxStartValue = maxStartValue / (maxValue - minValue) * 100.0f;
+            setNormalizedMaxValue(getStepValue(maxStartValue));
         }
     }
 
@@ -921,69 +922,59 @@ public class CrystalRangeSeekbar extends View {
 
     private void setNormalizedMinValue(double value) {
         normalizedMinValue = Math.max(0d, Math.min(100d, Math.min(value, normalizedMaxValue)));
-        if(fixGap != NO_FIXED_GAP && fixGap > 0){
-            addFixGap(true);
-        }
-        else{
-            addMinGap();
-        }
-        invalidate();
+
     }
 
     private void setNormalizedMaxValue(double value) {
         normalizedMaxValue = Math.max(0d, Math.min(100d, Math.max(value, normalizedMinValue)));
-        if(fixGap != NO_FIXED_GAP && fixGap > 0){
-            addFixGap(false);
-        }
-        else{
-            addMaxGap();
-        }
-        invalidate();
     }
 
     private void addFixGap(boolean leftThumb){
         if(leftThumb){
-            normalizedMaxValue = normalizedMinValue + fixGap;
+            normalizedMaxValue = normalizedMinValue + normalizedFixGap;
             if(normalizedMaxValue >= 100){
                 normalizedMaxValue = 100;
-                normalizedMinValue = normalizedMaxValue - fixGap;
+                normalizedMinValue = normalizedMaxValue - normalizedFixGap;
             }
         }
         else{
-            normalizedMinValue = normalizedMaxValue - fixGap;
+            normalizedMinValue = normalizedMaxValue - normalizedFixGap;
             if(normalizedMinValue <= 0){
                 normalizedMinValue = 0;
-                normalizedMaxValue = normalizedMinValue + fixGap;
+                normalizedMaxValue = normalizedMinValue + normalizedFixGap;
             }
         }
     }
 
     private void addMinGap(){
-        if((normalizedMinValue + gap) > normalizedMaxValue){
-            double g = normalizedMinValue + gap;
+        if((normalizedMinValue + normalizedGap) > normalizedMaxValue){
+            double g = normalizedMinValue + normalizedGap;
             normalizedMaxValue = g;
             normalizedMaxValue = Math.max(0d, Math.min(100d, Math.max(g, normalizedMinValue)));
 
-            if(normalizedMinValue >= (normalizedMaxValue - gap)){
-                normalizedMinValue = normalizedMaxValue - gap;
+            if(normalizedMinValue >= (normalizedMaxValue - normalizedGap)){
+                normalizedMinValue = normalizedMaxValue - normalizedGap;
             }
         }
     }
 
     private void addMaxGap(){
-        if((normalizedMaxValue - gap) < normalizedMinValue){
-            double g = normalizedMaxValue - gap;
+        if((normalizedMaxValue - normalizedGap) < normalizedMinValue){
+            double g = normalizedMaxValue - normalizedGap;
             normalizedMinValue = g;
             normalizedMinValue = Math.max(0d, Math.min(100d, Math.min(g, normalizedMaxValue)));
-            if(normalizedMaxValue <= (normalizedMinValue + gap)){
-                normalizedMaxValue = normalizedMinValue + gap;
+            if(normalizedMaxValue <= (normalizedMinValue + normalizedGap)){
+                normalizedMaxValue = normalizedMinValue + normalizedGap;
             }
         }
     }
 
     private double normalizedToValue(double normalized) {
-        double val = normalized / 100 * (maxValue - minValue);
+        double val = normalized / 100.0f * (maxValue - minValue);
         val = val + minValue;
+        if (needsSteps()) {
+            val = Math.round(val / steps) * steps;
+        }
         return val;
     }
 
